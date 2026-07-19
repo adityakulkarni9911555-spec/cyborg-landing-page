@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SYNAPSE — Neural-Prosthetic Interface System</title>
+<meta name="description" content="SYNAPSE Kinetic Arm — a peripheral nerve interface that reads motor intent directly and restores natural movement in under 15 milliseconds.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+/* ============ TOKENS ============ */
+:root{
+  --bg: #14161A;
+  --bg-panel: #1B1E23;
+  --bg-panel-2: #20242A;
+  --line: #33383F;
+  --bone: #EEE7DC;
+  --bone-dim: #A9A49B;
+  --steel: #8B92A0;
+  --crimson: #C4283A;
+  --crimson-bright: #E63A4E;
+  --amber: #E8A33D;
+
+  --display: "Big Shoulders Display", sans-serif;
+  --serif: "Source Serif 4", Georgia, serif;
+  --mono: "JetBrains Mono", monospace;
+
+  --wrap: 1180px;
+  --ease: cubic-bezier(.22,.61,.36,1);
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+
+html{scroll-behavior:smooth;}
+
+body{
+  background:var(--bg);
+  color:var(--bone);
+  font-family:var(--serif);
+  font-size:17px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+img,svg{display:block;max-width:100%;}
+
+a{color:inherit;text-decoration:none;}
+
+.wrap{
+  max-width:var(--wrap);
+  margin:0 auto;
+  padding:0 32px;
+}
+
+::selection{background:var(--crimson);color:var(--bone);}
+
+:focus-visible{
+  outline:2px solid var(--crimson-bright);
+  outline-offset:3px;
+}
+
+/* subtle background grain / grid so panels don't feel flat */
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:1;
+  background-image:
+    linear-gradient(rgba(139,146,160,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139,146,160,.035) 1px, transparent 1px);
+  background-size:64px 64px;
+  mask-image:radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 90%);
+}
+
+.eyebrow{
+  font-family:var(--mono);
+  font-size:12.5px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--crimson-bright);
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.eyebrow::before{
+  content:"";
+  width:7px;height:7px;
+  border-radius:50%;
+  background:var(--crimson-bright);
+  box-shadow:0 0 0 3px rgba(230,58,78,.18);
+  flex-shrink:0;
+}
+
+h1,h2,h3{
+  font-family:var(--display);
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.01em;
+  line-height:.98;
+  color:var(--bone);
+}
+
+/* ============ NAV ============ */
+header{
+  position:fixed;
+  top:0;left:0;right:0;
+  z-index:100;
+  background:rgba(20,22,26,.82);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+nav{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:18px 32px;
+  max-width:var(--wrap);
+  margin:0 auto;
+}
+.logo{
+  font-family:var(--display);
+  font-weight:800;
+  font-size:22px;
+  letter-spacing:.03em;
+  display:flex;
+  align-items:center;
+  gap:9px;
+}
+.logo .dot{
+  width:8px;height:8px;
+  border-radius:50%;
+  background:var(--crimson-bright);
+  box-shadow:0 0 10px 1px rgba(230,58,78,.7);
+}
+.nav-links{
+  display:flex;
+  gap:36px;
+  font-family:var(--mono);
+  font-size:13px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.nav-links a{
+  color:var(--steel);
+  transition:color .2s var(--ease);
+  position:relative;
+}
+.nav-links a:hover{color:var(--bone);}
+.nav-cta{
+  font-family:var(--mono);
+  font-size:12.5px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--bone);
+  border:1px solid var(--steel);
+  padding:9px 18px;
+  border-radius:2px;
+  transition:all .2s var(--ease);
+  white-space:nowrap;
+}
+.nav-cta:hover{
+  border-color:var(--crimson-bright);
+  background:rgba(196,40,58,.1);
+}
+.nav-toggle{display:none;background:none;border:none;color:var(--bone);cursor:pointer;padding:4px;}
+
+/* ============ HERO ============ */
+.hero{
+  position:relative;
+  padding:168px 0 96px;
+  z-index:2;
+}
+.hero-grid{
+  display:grid;
+  grid-template-columns:1.15fr .85fr;
+  gap:56px;
+  align-items:center;
+}
+.hero h1{
+  font-size:clamp(2.6rem, 5.2vw, 4.6rem);
+  margin:22px 0 26px;
+}
+.hero h1 em{
+  font-style:normal;
+  color:var(--crimson-bright);
+}
+.hero p.lede{
+  font-family:var(--serif);
+  font-size:19px;
+  color:var(--bone-dim);
+  max-width:46ch;
+  margin-bottom:38px;
+}
+.cta-row{
+  display:flex;
+  gap:16px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.btn{
+  font-family:var(--mono);
+  font-size:13px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  padding:15px 28px;
+  border-radius:2px;
+  cursor:pointer;
+  transition:all .22s var(--ease);
+  border:1px solid transparent;
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+}
+.btn-primary{
+  background:var(--crimson);
+  color:var(--bone);
+}
+.btn-primary:hover{
+  background:var(--crimson-bright);
+  transform:translateY(-2px);
+  box-shadow:0 8px 22px -6px rgba(196,40,58,.55);
+}
+.btn-ghost{
+  border-color:var(--line);
+  color:var(--bone);
+}
+.btn-ghost:hover{border-color:var(--steel);background:var(--bg-panel);}
+.btn-ghost svg{width:14px;height:14px;}
+
+/* vitals readout panel */
+.vitals{
+  background:var(--bg-panel);
+  border:1px solid var(--line);
+  border-radius:4px;
+  overflow:hidden;
+  position:relative;
+}
+.vitals-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:14px 18px;
+  border-bottom:1px solid var(--line);
+  font-family:var(--mono);
+  font-size:11.5px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--steel);
+}
+.vitals-head .live{
+  display:flex;align-items:center;gap:6px;
+  color:var(--crimson-bright);
+}
+.vitals-head .live::before{
+  content:"";width:6px;height:6px;border-radius:50%;
+  background:var(--crimson-bright);
+  animation:blink 1.6s ease-in-out infinite;
+}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.25;}}
+
+.wave-box{
+  height:130px;
+  overflow:hidden;
+  position:relative;
+  background:
+    repeating-linear-gradient(90deg, rgba(139,146,160,.06) 0 1px, transparent 1px 32px),
+    repeating-linear-gradient(0deg, rgba(139,146,160,.06) 0 1px, transparent 1px 26px);
+}
+.wave-track{
+  display:flex;
+  width:200%;
+  height:100%;
+  animation:scrollWave 7s linear infinite;
+}
+.wave-track svg{height:100%;width:50%;flex-shrink:0;}
+@keyframes scrollWave{
+  from{transform:translateX(0);}
+  to{transform:translateX(-50%);}
+}
+
+.readout-row{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  border-top:1px solid var(--line);
+}
+.readout{
+  padding:16px 18px;
+  border-right:1px solid var(--line);
+}
+.readout:last-child{border-right:none;}
+.readout .label{
+  font-family:var(--mono);
+  font-size:10.5px;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  color:var(--steel);
+  margin-bottom:6px;
+}
+.readout .value{
+  font-family:var(--mono);
+  font-size:22px;
+  font-weight:500;
+  color:var(--bone);
+}
+.readout .value span{
+  font-size:13px;
+  color:var(--bone-dim);
+}
+
+/* ============ SECTION SCAFFOLD ============ */
+section{
+  position:relative;
+  z-index:2;
+  padding:110px 0;
+  border-top:1px solid var(--line);
+}
+.section-head{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:40px;
+  align-items:end;
+  margin-bottom:64px;
+}
+.section-head h2{
+  font-size:clamp(2rem,4vw,3rem);
+  margin-top:14px;
+}
+.section-head p{
+  color:var(--bone-dim);
+  font-size:16.5px;
+  max-width:44ch;
+}
+
+/* ============ STAT STRIP ============ */
+.stats{
+  padding:56px 0;
+  background:var(--bg-panel);
+}
+.stat-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+}
+.stat{
+  padding:0 28px;
+  border-right:1px solid var(--line);
+}
+.stat:last-child{border-right:none;}
+.stat .num{
+  font-family:var(--display);
+  font-weight:700;
+  font-size:clamp(2.1rem,3.4vw,3.2rem);
+  color:var(--bone);
+  display:flex;
+  align-items:baseline;
+  gap:4px;
+}
+.stat .num .unit{
+  font-family:var(--mono);
+  font-size:15px;
+  color:var(--crimson-bright);
+  font-weight:500;
+}
+.stat .cap{
+  font-family:var(--mono);
+  font-size:11.5px;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+  color:var(--steel);
+  margin-top:8px;
+}
+
+/* ============ SYSTEM CARDS ============ */
+.system-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:1px;
+  background:var(--line);
+  border:1px solid var(--line);
+}
+.sys-card{
+  background:var(--bg);
+  padding:38px 32px 42px;
+  transition:background .25s var(--ease);
+}
+.sys-card:hover{background:var(--bg-panel);}
+.sys-card .icon{
+  width:52px;height:52px;
+  margin-bottom:26px;
+  color:var(--crimson-bright);
+}
+.sys-card .tag{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  color:var(--steel);
+  margin-bottom:10px;
+}
+.sys-card h3{
+  font-size:1.55rem;
+  margin-bottom:14px;
+  text-transform:none;
+  letter-spacing:0;
+}
+.sys-card p{
+  color:var(--bone-dim);
+  font-size:15.5px;
+}
+
+/* ============ PROCESS ============ */
+.process-list{
+  display:flex;
+  flex-direction:column;
+}
+.proc-row{
+  display:grid;
+  grid-template-columns:90px 1fr 1.3fr;
+  gap:32px;
+  padding:34px 0;
+  border-top:1px solid var(--line);
+  align-items:start;
+}
+.proc-row:last-child{border-bottom:1px solid var(--line);}
+.proc-num{
+  font-family:var(--mono);
+  font-size:14px;
+  color:var(--crimson-bright);
+  padding-top:4px;
+}
+.proc-title{
+  font-family:var(--display);
+  font-weight:700;
+  font-size:1.7rem;
+  text-transform:uppercase;
+  color:var(--bone);
+}
+.proc-desc{color:var(--bone-dim);font-size:15.5px;max-width:52ch;}
+
+/* ============ CASE STUDY ============ */
+.case{
+  background:var(--bg-panel);
+}
+.case-inner{
+  display:grid;
+  grid-template-columns:.9fr 1.1fr;
+  gap:64px;
+  align-items:center;
+}
+.case-visual{
+  aspect-ratio:4/5;
+  border-radius:4px;
+  border:1px solid var(--line);
+  background:
+    radial-gradient(circle at 30% 20%, rgba(196,40,58,.16), transparent 55%),
+    linear-gradient(160deg, #20242A, #16181C);
+  position:relative;
+  overflow:hidden;
+  display:flex;
+  align-items:flex-end;
+  padding:26px;
+}
+.case-visual .grip-lines{
+  position:absolute;inset:0;
+  background-image:repeating-linear-gradient(115deg, transparent 0 18px, rgba(139,146,160,.07) 18px 19px);
+}
+.case-visual .cap{
+  position:relative;
+  font-family:var(--mono);
+  font-size:11.5px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--steel);
+}
+blockquote{
+  font-family:var(--serif);
+  font-style:italic;
+  font-size:clamp(1.4rem,2.4vw,1.9rem);
+  line-height:1.45;
+  color:var(--bone);
+  margin-bottom:26px;
+}
+.cite{
+  font-family:var(--mono);
+  font-size:12.5px;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  color:var(--steel);
+}
+.cite strong{color:var(--bone);font-weight:600;}
+
+/* ============ SPECS TABLE ============ */
+.specs-table{
+  width:100%;
+  border-collapse:collapse;
+  font-family:var(--mono);
+  font-size:14.5px;
+}
+.specs-table tr{border-top:1px solid var(--line);}
+.specs-table tr:last-child{border-bottom:1px solid var(--line);}
+.specs-table td{padding:18px 6px;}
+.specs-table td:first-child{
+  color:var(--steel);
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  font-size:12px;
+  width:38%;
+}
+.specs-table td:last-child{
+  color:var(--bone);
+  text-align:right;
+}
+
+/* ============ ACCESS / CTA FORM ============ */
+.access{
+  background:
+    radial-gradient(ellipse 60% 90% at 80% 20%, rgba(196,40,58,.10), transparent),
+    var(--bg);
+}
+.access-inner{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:64px;
+  align-items:start;
+}
+.access h2{font-size:clamp(2rem,4vw,3rem);margin:14px 0 18px;}
+.access p{color:var(--bone-dim);max-width:42ch;}
+.form-panel{
+  background:var(--bg-panel);
+  border:1px solid var(--line);
+  border-radius:4px;
+  padding:34px;
+}
+.field{margin-bottom:20px;}
+.field label{
+  display:block;
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--steel);
+  margin-bottom:8px;
+}
+.field input,.field select{
+  width:100%;
+  background:var(--bg);
+  border:1px solid var(--line);
+  border-radius:2px;
+  padding:12px 14px;
+  color:var(--bone);
+  font-family:var(--serif);
+  font-size:15px;
+  transition:border-color .2s var(--ease);
+}
+.field input:focus,.field select:focus{border-color:var(--crimson-bright);}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.form-note{
+  font-family:var(--mono);
+  font-size:11.5px;
+  color:var(--steel);
+  margin-top:16px;
+  line-height:1.5;
+}
+.submit-btn{
+  width:100%;
+  justify-content:center;
+  margin-top:6px;
+}
+
+/* ============ FOOTER ============ */
+footer{
+  border-top:1px solid var(--line);
+  padding:48px 0 36px;
+}
+.footer-grid{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  flex-wrap:wrap;
+  gap:28px;
+}
+.footer-links{
+  display:flex;
+  gap:30px;
+  font-family:var(--mono);
+  font-size:12.5px;
+  color:var(--steel);
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+.footer-links a:hover{color:var(--bone);}
+.disclaimer{
+  font-family:var(--mono);
+  font-size:11.5px;
+  color:var(--steel);
+  max-width:640px;
+  line-height:1.6;
+  margin-top:28px;
+  padding-top:24px;
+  border-top:1px solid var(--line);
+}
+
+/* ============ REVEAL ANIMATION ============ */
+.reveal{
+  opacity:0;
+  transform:translateY(18px);
+  transition:opacity .7s var(--ease), transform .7s var(--ease);
+}
+.reveal.in{opacity:1;transform:translateY(0);}
+
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto;}
+  .wave-track{animation:none;}
+  .eyebrow::before,.vitals-head .live::before{animation:none;}
+  .reveal{opacity:1;transform:none;transition:none;}
+  .btn-primary:hover{transform:none;}
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width:980px){
+  .hero-grid{grid-template-columns:1fr;gap:48px;}
+  .section-head{grid-template-columns:1fr;gap:16px;}
+  .system-grid{grid-template-columns:1fr;}
+  .case-inner{grid-template-columns:1fr;gap:36px;}
+  .case-visual{aspect-ratio:16/9;}
+  .access-inner{grid-template-columns:1fr;gap:36px;}
+  .stat-grid{grid-template-columns:repeat(2,1fr);row-gap:32px;}
+  .stat:nth-child(2n){border-right:none;}
+  .stat:nth-child(-n+2){padding-bottom:0;}
+}
+
+@media (max-width:720px){
+  .nav-links{
+    position:fixed;
+    top:64px;left:0;right:0;
+    background:var(--bg);
+    border-bottom:1px solid var(--line);
+    flex-direction:column;
+    gap:0;
+    padding:8px 0;
+    transform:translateY(-130%);
+    transition:transform .3s var(--ease);
+  }
+  .nav-links.open{transform:translateY(0);}
+  .nav-links a{padding:14px 32px;width:100%;border-top:1px solid var(--line);}
+  .nav-cta{display:none;}
+  .nav-toggle{display:block;}
+  .hero{padding:130px 0 64px;}
+  .proc-row{grid-template-columns:1fr;gap:10px;}
+  .proc-num{padding-top:0;}
+  .field-row{grid-template-columns:1fr;}
+  .footer-grid{flex-direction:column;}
+}
+
+@media (max-width:520px){
+  .wrap{padding:0 20px;}
+  nav{padding:16px 20px;}
+  .stat-grid{grid-template-columns:1fr;}
+  .stat{border-right:none;padding:0;}
+  .readout-row{grid-template-columns:1fr;}
+  .readout{border-right:none;border-bottom:1px solid var(--line);}
+  .readout:last-child{border-bottom:none;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <nav>
+    <div class="logo"><span class="dot"></span>SYNAPSE</div>
+    <div class="nav-links" id="navLinks">
+      <a href="#system">System</a>
+      <a href="#process">Process</a>
+      <a href="#case">Outcomes</a>
+      <a href="#specs">Specs</a>
+    </div>
+    <a href="#access" class="nav-cta">Request Access</a>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 6h16M3 11h16M3 16h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ============ HERO ============ -->
+  <section class="hero" style="border-top:none;padding-top:168px;">
+    <div class="wrap hero-grid">
+      <div>
+        <div class="eyebrow">Peripheral Nerve Interface — Gen 4</div>
+        <h1>Your nervous system<br>didn't stop <em>at the wrist.</em></h1>
+        <p class="lede">SYNAPSE reads motor intent directly from residual peripheral nerves and returns it as movement — no switches, no trained gestures, no delay you can feel. The signal was always yours. We just finish the circuit.</p>
+        <div class="cta-row">
+          <a href="#access" class="btn btn-primary">Request Access</a>
+          <a href="#process" class="btn btn-ghost">See how it reads signal
+            <svg viewBox="0 0 14 14" fill="none"><path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <div class="vitals">
+        <div class="vitals-head">
+          <span>Live Decode — Unit 04A</span>
+          <span class="live">Streaming</span>
+        </div>
+        <div class="wave-box">
+          <div class="wave-track" id="waveTrack">
+            <svg viewBox="0 0 400 130" preserveAspectRatio="none">
+              <polyline points="0,65 24,65 34,65 42,20 50,110 58,40 66,65 90,65 130,65 140,65 148,30 156,95 164,50 172,65 200,65 240,65 250,65 258,20 266,110 274,40 282,65 306,65 346,65 356,65 364,30 372,95 380,50 388,65 400,65" fill="none" stroke="#E63A4E" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+            </svg>
+            <svg viewBox="0 0 400 130" preserveAspectRatio="none">
+              <polyline points="0,65 24,65 34,65 42,20 50,110 58,40 66,65 90,65 130,65 140,65 148,30 156,95 164,50 172,65 200,65 240,65 250,65 258,20 266,110 274,40 282,65 306,65 346,65 356,65 364,30 372,95 380,50 388,65 400,65" fill="none" stroke="#E63A4E" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="readout-row">
+          <div class="readout">
+            <div class="label">Latency</div>
+            <div class="value" id="valLatency">11<span>ms</span></div>
+          </div>
+          <div class="readout">
+            <div class="label">Intent Match</div>
+            <div class="value" id="valMatch">98.6<span>%</span></div>
+          </div>
+          <div class="readout">
+            <div class="label">Channels</div>
+            <div class="value">128<span>ch</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STATS ============ -->
+  <section class="stats" style="padding-top:56px;padding-bottom:56px;border-top:1px solid var(--line);">
+    <div class="wrap stat-grid">
+      <div class="stat">
+        <div class="num">11<span class="unit">ms</span></div>
+        <div class="cap">Signal-to-motion latency</div>
+      </div>
+      <div class="stat">
+        <div class="num">340<span class="unit">patterns</span></div>
+        <div class="cap">Trained grip &amp; gesture library</div>
+      </div>
+      <div class="stat">
+        <div class="num">128<span class="unit">ch</span></div>
+        <div class="cap">Electrode array resolution</div>
+      </div>
+      <div class="stat">
+        <div class="num">6<span class="unit">yrs</span></div>
+        <div class="cap">Median cuff service life</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SYSTEM ============ -->
+  <section id="system">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="eyebrow">The System</div>
+        <div></div>
+      </div>
+      <div class="section-head reveal" style="margin-top:-40px;">
+        <h2>Three components.<br>One continuous loop.</h2>
+        <p>Nothing about SYNAPSE works in isolation. Each part exists to keep the signal moving — out to the limb, and back again as sensation.</p>
+      </div>
+
+      <div class="system-grid">
+        <div class="sys-card reveal">
+          <svg class="icon" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="15" stroke="currentColor" stroke-width="1.6"/><circle cx="24" cy="24" r="4" fill="currentColor"/><path d="M24 9V4M24 44v-5M39 24h5M4 24h5M34.6 13.4l3.5-3.5M9.9 38.1l3.5-3.5M34.6 34.6l3.5 3.5M9.9 9.9l3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <div class="tag">01 — Sensing</div>
+          <h3>Neural Cuff</h3>
+          <p>A spiral electrode array implanted around the residual nerve bundle. It reads raw efferent traffic — the pattern your brain already sends when you mean to move — without requiring you to learn a new one.</p>
+        </div>
+        <div class="sys-card reveal">
+          <svg class="icon" viewBox="0 0 48 48" fill="none"><rect x="10" y="10" width="28" height="28" rx="3" stroke="currentColor" stroke-width="1.6"/><path d="M18 18h12v12H18z" stroke="currentColor" stroke-width="1.4"/><path d="M24 4v6M24 38v6M4 24h6M38 24h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <div class="tag">02 — Decoding</div>
+          <h3>Cortex Bridge</h3>
+          <p>A coin-sized processor worn at the socket. It classifies incoming signal against your personal motor library in real time and resolves it into a specific, continuous joint command.</p>
+        </div>
+        <div class="sys-card reveal">
+          <svg class="icon" viewBox="0 0 48 48" fill="none"><path d="M14 6l-3 14 6 4-4 18 21-24-9-2 5-10z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          <div class="tag">03 — Actuating</div>
+          <h3>Kinetic Limb</h3>
+          <p>Seventeen independently driven joints translate the decoded command into motion, while embedded pressure sensors send texture and grip force back up through the same cuff.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PROCESS ============ -->
+  <section id="process">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="eyebrow">How Signal Becomes Motion</div>
+        <div></div>
+      </div>
+      <div class="section-head reveal" style="margin-top:-40px;">
+        <h2>Four stages.<br>Under fifteen milliseconds.</h2>
+        <p>This is the same loop, every time you reach for something — it happens fast enough that it stops feeling like a device and starts feeling like a hand again.</p>
+      </div>
+
+      <div class="process-list">
+        <div class="proc-row reveal">
+          <div class="proc-num">01</div>
+          <div class="proc-title">Intent</div>
+          <div class="proc-desc">A nerve fires the instant you think to move — the same efferent signal it always sent, whether or not there's still a hand on the other end of it.</div>
+        </div>
+        <div class="proc-row reveal">
+          <div class="proc-num">02</div>
+          <div class="proc-title">Capture</div>
+          <div class="proc-desc">The neural cuff's 128 electrodes pick up that raw pattern across the residual nerve bundle and pass it to the Cortex Bridge as a continuous stream.</div>
+        </div>
+        <div class="proc-row reveal">
+          <div class="proc-num">03</div>
+          <div class="proc-title">Decode</div>
+          <div class="proc-desc">The Bridge matches the pattern against your trained motor library — built during a two-week calibration period — and resolves it into a joint-level command in under 15ms.</div>
+        </div>
+        <div class="proc-row reveal">
+          <div class="proc-num">04</div>
+          <div class="proc-title">Actuate &amp; Return</div>
+          <div class="proc-desc">The limb moves, and its pressure sensors immediately send grip force and texture back up the same pathway — so the next intent you form already accounts for what you're holding.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CASE STUDY ============ -->
+  <section id="case" class="case">
+    <div class="wrap case-inner">
+      <div class="case-visual reveal">
+        <div class="grip-lines"></div>
+        <div class="cap">Case 0447 — 14 months post-fit</div>
+      </div>
+      <div class="reveal">
+        <div class="eyebrow">Outcome</div>
+        <blockquote>"The first time I trusted it was on a crimp hold, four feet up a wall. I wasn't thinking about the arm. I was thinking about the next hold. That's the whole difference."</blockquote>
+        <div class="cite"><strong>Maya R.</strong> — climber, SYNAPSE Kinetic Arm, right transradial, 14 months in use</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SPECS ============ -->
+  <section id="specs">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="eyebrow">Specification</div>
+        <div></div>
+      </div>
+      <div class="section-head reveal" style="margin-top:-40px;">
+        <h2>Unit 04A</h2>
+        <p>Current-generation hardware, as fitted in clinical trial sites. Figures are measured at rest, 21°C.</p>
+      </div>
+
+      <table class="specs-table reveal">
+        <tr><td>Signal-to-motion latency</td><td>11ms median / 15ms p99</td></tr>
+        <tr><td>Electrode channels</td><td>128 per cuff</td></tr>
+        <tr><td>Trained gesture library</td><td>340 patterns, expandable</td></tr>
+        <tr><td>Independent joints</td><td>17</td></tr>
+        <tr><td>Battery</td><td>19 hrs active use / 30 min fast charge to 80%</td></tr>
+        <tr><td>Ingress protection</td><td>IP67, submersible to 1m</td></tr>
+        <tr><td>Limb weight (transradial)</td><td>412g</td></tr>
+        <tr><td>Cuff service life</td><td>6 years median before revision</td></tr>
+        <tr><td>Calibration period</td><td>2 weeks, outpatient</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ ACCESS ============ -->
+  <section id="access" class="access">
+    <div class="wrap access-inner">
+      <div class="reveal">
+        <div class="eyebrow">Clinical Access Program</div>
+        <h2>Request a fitting consultation.</h2>
+        <p>SYNAPSE is currently available through partner clinical sites. Tell us where you are in the process and a prosthetist on our team will reach out within three business days.</p>
+      </div>
+
+      <form class="form-panel reveal" id="accessForm">
+        <div class="field-row">
+          <div class="field">
+            <label for="fname">First name</label>
+            <input type="text" id="fname" name="fname" required autocomplete="given-name">
+          </div>
+          <div class="field">
+            <label for="lname">Last name</label>
+            <input type="text" id="lname" name="lname" required autocomplete="family-name">
+          </div>
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required autocomplete="email">
+        </div>
+        <div class="field">
+          <label for="stage">Where are you in the process?</label>
+          <select id="stage" name="stage">
+            <option>Recent limb loss, exploring options</option>
+            <option>Currently using another prosthetic</option>
+            <option>Clinician inquiring on behalf of a patient</option>
+            <option>Just researching</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary submit-btn">Submit Request</button>
+        <div class="form-note">Investigational device — available at partner clinical sites only. Eligibility depends on residual nerve viability, confirmed during consultation.</div>
+      </form>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="logo"><span class="dot"></span>SYNAPSE</div>
+      <div class="footer-links">
+        <a href="#system">System</a>
+        <a href="#process">Process</a>
+        <a href="#case">Outcomes</a>
+        <a href="#specs">Specs</a>
+        <a href="#access">Access</a>
+      </div>
+    </div>
+    <div class="disclaimer">
+      SYNAPSE Kinetic Arm is an investigational neuroprosthetic device, fitted and monitored exclusively through partner clinical sites. Outcomes vary by residual nerve condition, amputation level, and rehabilitation adherence. This page is a product design concept and does not represent an approved medical device or an active offering.
+    </div>
+  </div>
+</footer>
+
+<script>
+// Reveal-on-scroll
+const revealEls = document.querySelectorAll('.reveal');
+const io = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.classList.add('in');
+      io.unobserve(e.target);
+    }
+  });
+},{threshold:0.15});
+revealEls.forEach(el=>io.observe(el));
+
+// Mobile nav toggle
+const navToggle = document.getElementById('navToggle');
+const navLinks = document.getElementById('navLinks');
+navToggle.addEventListener('click', ()=>{
+  const open = navLinks.classList.toggle('open');
+  navToggle.setAttribute('aria-expanded', open);
+});
+navLinks.querySelectorAll('a').forEach(a=>{
+  a.addEventListener('click', ()=>{
+    navLinks.classList.remove('open');
+    navToggle.setAttribute('aria-expanded','false');
+  });
+});
+
+// Live-feeling readout jitter (respects reduced motion)
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if(!reduce){
+  const latencyEl = document.getElementById('valLatency');
+  const matchEl = document.getElementById('valMatch');
+  setInterval(()=>{
+    const lat = (9 + Math.random()*4).toFixed(0);
+    const match = (97.9 + Math.random()*1.3).toFixed(1);
+    latencyEl.innerHTML = lat + '<span>ms</span>';
+    matchEl.innerHTML = match + '<span>%</span>';
+  }, 1800);
+}
+
+// Form submit (demo — no backend)
+document.getElementById('accessForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const btn = this.querySelector('.submit-btn');
+  btn.textContent = 'Request Received';
+  btn.style.background = '#3A7D5C';
+  this.querySelectorAll('input,select').forEach(i=>i.disabled = true);
+});
+</script>
+
+</body>
+</html>
